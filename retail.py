@@ -34,7 +34,7 @@ df['ts'] = pd.to_datetime(df['ts'])
 
 df.set_index('ts', inplace=True)
 all_days = pd.date_range(start=df.index.min(), end=df.index.max(), freq='D')
-df = df.reindex(all_days, fill_value=0)
+df = df.reindex(all_days, fill_value=20)
 df = df.reset_index().rename(columns={'index': 'ts'})
 
 
@@ -42,11 +42,10 @@ df = df.reset_index().rename(columns={'index': 'ts'})
 anomaly_df = pd.DataFrame({
     # start and end date are inclusive
     # each row is an anomaly interval
-    cst.START_TIME_COL: ["2011-01-11", "2011-06-09", "2011-11-03"],  # inclusive
-    cst.END_TIME_COL: ["2011-01-11", "2011-06-09", "2011-11-03"],  # inclusive
-    cst.ADJUSTMENT_DELTA_COL: [-2300, -3000, -500],  # mask as NA
+    cst.START_TIME_COL: ["2011-01-11", "2011-06-09", "2011-11-03", "2010-12-17", "2011-11-10"],  # inclusive
+    cst.END_TIME_COL: ["2011-01-11", "2011-06-09", "2011-11-03", "2010-12-17", "2011-11-10"],  # inclusive
+    cst.ADJUSTMENT_DELTA_COL: [-2300, -3000, -500, 450, 195],  # mask as NA
 })
-
 
 # Creates anomaly_info dictionary.
 # This will be fed into the template.

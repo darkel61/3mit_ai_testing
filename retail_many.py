@@ -76,6 +76,15 @@ for index, product in enumerate(products):
         "adjustment_delta_col": cst.ADJUSTMENT_DELTA_COL,
     }
 
+    last_price = df['sale_price'].iloc[-1] #<-obtenemos el ultimo precio
+
+    # Agregar el ultimo precio al dataframe
+    fechas_futuras = pd.date_range(start=df['ts'].max() + pd.DateOffset(1), periods=35)
+    precios_futuros = [last_price]*35
+
+    df_futuros = pd.DataFrame({'ts': fechas_futuras, 'sale_price': precios_futuros})
+    df = pd.concat([df, df_futuros], ignore_index=True)
+
     # No es un dataframe pero pareceira un dataframe
     ts = UnivariateTimeSeries()
     ts.load_data(
@@ -116,7 +125,7 @@ for index, product in enumerate(products):
         }
 
         model_components = ModelComponentsParam(
-            # regressors=regressors, 
+            regressors=regressors, 
             seasonality={
                 "yearly_seasonality": 15,
                 "weekly_seasonality": 3,

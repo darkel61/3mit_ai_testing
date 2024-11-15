@@ -5,6 +5,7 @@ __pycache__/
 *.pyc
 *.py[cod]
 /.venv
+/greykite-env
 /.pytest_cache
 
 # C extensions

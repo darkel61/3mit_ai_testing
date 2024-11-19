@@ -59,9 +59,11 @@ for index, product in enumerate(products):
         b_df['z_score'] = (b_df['y'] - b_df['y'].mean()) / b_df['y'].std()
         # Define a threshold for identifying anomalies
         threshold = 3
+        negative_threshold = 1
 
         # Filter anomalies
         anomalies = b_df[np.abs(b_df['z_score']) > threshold]
+        anomalies = b_df[np.abs(b_df['z_score']) < negative_threshold]
         anomaly_df = pd.DataFrame({
             # start and end date are inclusive
             # each row is an anomaly interval

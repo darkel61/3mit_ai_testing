@@ -26,66 +26,55 @@ from greykite.framework.input.univariate_time_series import UnivariateTimeSeries
 # Preparacion de Data Frame
 retail_csv = pd.read_csv('retail_many.csv')
 full_df = pd.DataFrame(retail_csv)
-full_df.rename(columns={'fecha_venta': 'ts', 'cantidad': 'y', 'precio_venta': 'sale_price'}, inplace=True)
-products = full_df['codigo_articulo'].unique()
-products_name = full_df['producto'].unique()
+full_df.rename(columns={
+    'fecha_venta': 'ts', 
+    'cantidad': 'y', 
+    'precio_venta': 'sale_price', 
+    'codigo_articulo': 'article_id', 
+    'producto': 'article_name'}, inplace=True)
+products = full_df['article_id'].unique()
+products_name = full_df['article_name'].unique()
 
 for index, product in enumerate(products):
-    df = full_df[full_df['codigo_articulo'] == product]
-
-
-    df['ts'] = pd.to_datetime(df['ts']) 
-    df['ts'] = df['ts'].dt.date 
-
-    branches = df['codigo_sucursal'].unique()
-
+    runtime = datetime.datetime.now()
+    df = full_df[full_df['article_id'] == product]
     df = df.groupby('ts').agg({
         'y': 'sum',
         'sale_price': 'last'  # Choose how to aggregate other columns
     }).reset_index()
+    
     df['ts'] = pd.to_datetime(df['ts']) 
+    df['ts'] = df['ts'].dt.date 
+
 
     df.set_index('ts', inplace=True)
     all_days = pd.date_range(start=df.index.min(), end=df.index.max(), freq='D')
     df = df.reindex(all_days, fill_value=20)
     df = df.reset_index().rename(columns={'index': 'ts'})
-
-
+    
+    
 
     # Anomalias
     # Calculate the Z-score
     df['z_score'] = (df['y'] - df['y'].mean()) / df['y'].std()
     # Define a threshold for identifying anomalies
-    threshold = 3
+    threshold = 2.5
 
     # Filter anomalies
     anomalies = df[np.abs(df['z_score']) > threshold]
     anomaly_df = pd.DataFrame({
-        # start and end date are inclusive
-        # each row is an anomaly interval
-        cst.START_TIME_COL: list(anomalies['ts']),  # inclusive
-        cst.END_TIME_COL: list(anomalies['ts']),  # inclusive
+        cst.START_TIME_COL: list(anomalies['ts']),
+        cst.END_TIME_COL: list(anomalies['ts']),
         cst.ADJUSTMENT_DELTA_COL: [int(num*-1) for num in list(anomalies['z_score'] * df['y'].std())],  # mask as NA
     })
 
-    # # Creates anomaly_info dictionary.
-    # # This will be fed into the template.
     anomaly_info = {
         "value_col": "y",
         "anomaly_df": anomaly_df,
         "adjustment_delta_col": cst.ADJUSTMENT_DELTA_COL,
     }
-
-    last_price = df['sale_price'].iloc[-1] #<-obtenemos el ultimo precio
-
-    # Agregar el ultimo precio al dataframe
-    fechas_futuras = pd.date_range(start=df['ts'].max() + pd.DateOffset(1), periods=35)
-    precios_futuros = [last_price]*35
-
-    df_futuros = pd.DataFrame({'ts': fechas_futuras, 'sale_price': precios_futuros})
-    df = pd.concat([df, df_futuros], ignore_index=True)
-
-    # No es un dataframe pero pareceira un dataframe
+    
+    # No es un dataframe pero pareceira un dataframe5
     ts = UnivariateTimeSeries()
     ts.load_data(
         df=df,
@@ -96,8 +85,24 @@ for index, product in enumerate(products):
         regressor_cols=["sale_price"]
     )
 
+    # fig = ts.plot_quantiles_and_overlays(
+    #     groupby_time_feature="dom",
+    #     show_mean=True,
+    #     show_quantiles=False,
+    #     show_overlays=True,
+    #     overlay_label_time_feature="month",
+    #     overlay_style={"line": {"width": 1}, "opacity": 0.5},
+    #     center_values=True,
+    #     xlabel="day of month",
+    #     ylabel=ts.original_value_col,
+    #     title="monthly seasonality for each month (centered)",
+    # )
+    # fig.write_html(f"html/ANOMALIA{products_name[index]}-{product}.html")
+
+
     # fig = ts.plot()
-    # fig.write_html("html/anomaly.html")
+    # fig.write_html(f"html/{products_name[index]}-{product}.html")
+
 
     # Comenta esta linea si queires matar la anomalia!
     df = ts.df
@@ -109,7 +114,7 @@ for index, product in enumerate(products):
         freq="D"  # "H" for hourly, "D" for daily, "W" for weekly, etc.
     )
 
-    # Cross Validation. pero creo que no hice nada con esto.
+    # Cross Validation. 
     # evaluation_period = EvaluationPeriodParam(
     #     test_horizon=90,
     #     cv_horizon=125,
@@ -120,6 +125,17 @@ for index, product in enumerate(products):
     # Runs the forecast
     try:
         forecaster = Forecaster()
+
+        # Regresores
+        last_price = df['sale_price'].iloc[-1] 
+
+        # Agregar el ultimo precio al dataframe
+        future_dates = pd.date_range(start=df['ts'].max() + pd.DateOffset(1), periods=35)
+        future_prices = [last_price]*35
+
+        df_futuros = pd.DataFrame({'ts': future_dates, 'sale_price': future_prices})
+        df = pd.concat([df, df_futuros], ignore_index=True)
+
         regressors = {
             "regressor_cols": ["sale_price"]
         }
@@ -155,7 +171,7 @@ for index, product in enumerate(products):
                 coverage=0.90,
                 metadata_param=metadata,
                 model_components_param=model_components,
-                # evaluation_period_param=evaluation_period #Comentable
+                # evaluation_period_param=evaluation_period 
             )
         )
 
@@ -168,8 +184,8 @@ for index, product in enumerate(products):
         # model = ChangepointDetector()
         # res = model.find_trend_changepoints(
         #     df=df,  # data df
-        #     time_col="invDate",  # time column name
-        #     value_col="Quantity",  # value column name
+        #     time_col="ts",  # time column name
+        #     value_col="y",  # value column name
         #     yearly_seasonality_order=10,  # yearly seasonality order, fit along with trend
         #     regularization_strength=0.5,  # between 0.0 and 1.0, greater values imply fewer changepoints, and 1.0 implies no changepoints
         #     resample_freq="7D",  # data aggregation frequency, eliminate small fluctuation/seasonality
@@ -183,10 +199,12 @@ for index, product in enumerate(products):
         #     yearly_seasonality_estimate=False,
         #     adaptive_lasso_estimate=True,
         #     plot=False)
-        # fig.write_html("html/growth.html")
+        # fig.write_html(f"html/growth-{products_name[index]}-{product}.html")
 
         print(f"html/{products_name[index]}-{product}.html")
         print(pd.DataFrame(result.backtest.test_evaluation, index=["Value"]).transpose())
+        print("Tarde Esto en Correr!:", datetime.datetime.now() - runtime)
+        # break
     except Exception as e :
         print(e)
         print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")

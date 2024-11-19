@@ -34,6 +34,15 @@ full_df.rename(columns={
     'producto': 'article_name'}, inplace=True)
 products = full_df['article_id'].unique()
 products_name = full_df['article_name'].unique()
+# silverkite defaults
+events = dict(
+    holidays_to_model_separately="auto",
+    holiday_lookup_countries=["Venezuela"],
+    holiday_pre_num_days=0,
+    holiday_post_num_days=0,
+    holiday_pre_post_num_dict=None,
+    daily_event_df_dict=None
+)
 
 for index, product in enumerate(products):
     runtime = datetime.datetime.now()
@@ -142,6 +151,7 @@ for index, product in enumerate(products):
 
         model_components = ModelComponentsParam(
             regressors=regressors, 
+            events=events,
             seasonality={
                 "yearly_seasonality": 15,
                 "weekly_seasonality": 3,

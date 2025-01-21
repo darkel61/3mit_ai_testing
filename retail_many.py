@@ -185,6 +185,15 @@ for index, product in enumerate(products):
             )
         )
 
+        print('// Dumped //')
+        forecaster.dump_forecast_result(
+            destination_dir=f'./forecast-{product}-{products_name[index].replace(" ", "-")}',
+            object_name='object',
+            dump_design_info=True,
+            overwrite_exist_dir=True,
+        )
+        print('// Dumped 2 //')
+
         forecast = result.forecast
         fig = forecast.plot()
         fig.write_html(f"html/{products_name[index]}-{product}.html")

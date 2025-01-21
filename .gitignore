@@ -85,3 +85,5 @@ ChangeLog
 .pre-commit-config-local.yaml
 
 .vscode
+forecast-*/
+results/

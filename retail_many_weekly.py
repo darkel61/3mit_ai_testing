@@ -24,7 +24,7 @@ from greykite.framework.utils.result_summary import summarize_grid_search_result
 from greykite.framework.input.univariate_time_series import UnivariateTimeSeries
 
 # Preparacion de Data Frame
-retail_csv = pd.read_csv('retail_many.csv')
+retail_csv = pd.read_csv('./retail_many.csv')
 full_df = pd.DataFrame(retail_csv)
 full_df.rename(columns={
     'fecha_venta': 'ts', 
@@ -73,9 +73,12 @@ for index, product in enumerate(products):
 
     # Anomalias
     # Calculate the Z-score
+    # TODO: Investigar normalización. Analisis logaritmico.
     df['z_score'] = (df['y'] - df['y'].mean()) / df['y'].std()
     # Define a threshold for identifying anomalies
-    threshold = 2.5
+    threshold = 1 
+
+    print(df.describe())
 
     # Filter anomalies
     anomalies = df[np.abs(df['z_score']) > threshold]
@@ -98,7 +101,7 @@ for index, product in enumerate(products):
         time_col="ts",
         value_col="y",
         freq="W",
-        anomaly_info=anomaly_info,
+        #anomaly_info=anomaly_info,
         regressor_cols=["sale_price"]
     )
 
@@ -147,8 +150,8 @@ for index, product in enumerate(products):
         last_price = df['sale_price'].iloc[-1] 
 
         # Agregar el ultimo precio al dataframe
-        future_dates = pd.date_range(start=df['ts'].max() + pd.DateOffset(7), periods=35, freq='W')
-        future_prices = [last_price]*35
+        future_dates = pd.date_range(start=df['ts'].max() + pd.DateOffset(7), periods=4, freq='W')
+        future_prices = [last_price]*4
 
         df_futuros = pd.DataFrame({'ts': future_dates, 'sale_price': future_prices})
         df = pd.concat([df, df_futuros], ignore_index=True)
@@ -194,9 +197,19 @@ for index, product in enumerate(products):
             )
         )
 
+        # }Writing the model to a file.
+        print('// Dumped //')
+        forecaster.dump_forecast_result(
+            destination_dir='./results',
+            object_name=f'forecast-{product}',
+            dump_design_info=True,
+            overwrite_exist_dir=True,
+        )
+        print('// Dumped 2 //')
+
         forecast = result.forecast
         fig = forecast.plot()
-        fig.write_html(f"html/{products_name[index]}-{product}.html")
+        fig.write_html(f"./html/weekly-{products_name[index]}-{product}.html")
 
 
         # Crecimiento y Tendencia pero no se ha hecho nada con esto como tal.

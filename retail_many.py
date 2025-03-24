@@ -24,7 +24,7 @@ from greykite.framework.utils.result_summary import summarize_grid_search_result
 from greykite.framework.input.univariate_time_series import UnivariateTimeSeries
 
 # Preparacion de Data Frame
-retail_csv = pd.read_csv('retail_many.csv')
+retail_csv = pd.read_csv('data_productos_ventas_3.csv')
 full_df = pd.DataFrame(retail_csv)
 full_df.rename(columns={
     'fecha_venta': 'ts', 
@@ -139,8 +139,8 @@ for index, product in enumerate(products):
         last_price = df['sale_price'].iloc[-1] 
 
         # Agregar el ultimo precio al dataframe
-        future_dates = pd.date_range(start=df['ts'].max() + pd.DateOffset(1), periods=35)
-        future_prices = [last_price]*35
+        future_dates = pd.date_range(start=df['ts'].max() + pd.DateOffset(1), periods=72)
+        future_prices = [last_price]*72
 
         df_futuros = pd.DataFrame({'ts': future_dates, 'sale_price': future_prices})
         df = pd.concat([df, df_futuros], ignore_index=True)
@@ -152,10 +152,11 @@ for index, product in enumerate(products):
         model_components = ModelComponentsParam(
             regressors=regressors, 
             events=events,
-            seasonality={
-                "yearly_seasonality": 15,
-                "weekly_seasonality": 3,
-            },
+            seasonality=dict(yearly_seasonality = "auto",
+                   quarterly_seasonality = "auto",
+                   monthly_seasonality = "auto",
+                   weekly_seasonality = "auto",
+                   daily_seasonality = "auto"),
             growth={
                 "growth_term": "linear"
             },
@@ -177,7 +178,7 @@ for index, product in enumerate(products):
             df=df,
             config=ForecastConfig(
                 model_template=ModelTemplateEnum.SILVERKITE.name,
-                forecast_horizon=35, 
+                forecast_horizon=72, 
                 coverage=0.90,
                 metadata_param=metadata,
                 model_components_param=model_components,
@@ -187,7 +188,7 @@ for index, product in enumerate(products):
 
         forecast = result.forecast
         fig = forecast.plot()
-        fig.write_html(f"html/{products_name[index]}-{product}.html")
+        fig.write_html(f"html/silver{products_name[index]}-{product}.html")
 
 
         # Crecimiento y Tendencia pero no se ha hecho nada con esto como tal.

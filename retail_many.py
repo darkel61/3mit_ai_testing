@@ -24,13 +24,14 @@ from greykite.framework.utils.result_summary import summarize_grid_search_result
 from greykite.framework.input.univariate_time_series import UnivariateTimeSeries
 
 # Preparacion de Data Frame
-retail_csv = pd.read_csv('data_productos_ventas_3.csv')
+retail_csv = pd.read_csv('data_productos_ventas_3_sin_2025.csv')
 full_df = pd.DataFrame(retail_csv)
 full_df.rename(columns={
     'fecha_venta': 'ts', 
     'cantidad': 'y', 
     'precio_venta': 'sale_price', 
-    'codigo_articulo': 'article_id', 
+    'codigo_articulo': 'article_id',
+    'sucursal': 'branch', 
     'producto': 'article_name'}, inplace=True)
 products = full_df['article_id'].unique()
 products_name = full_df['article_name'].unique()
@@ -146,7 +147,7 @@ for index, product in enumerate(products):
         df = pd.concat([df, df_futuros], ignore_index=True)
 
         regressors = {
-            "regressor_cols": ["sale_price"]
+            "regressor_cols": ["sale_price", "branch"]
         }
 
         model_components = ModelComponentsParam(
@@ -154,7 +155,7 @@ for index, product in enumerate(products):
             events=events,
             seasonality=dict(yearly_seasonality = "auto",
                    quarterly_seasonality = "auto",
-                   monthly_seasonality = "auto",
+                   monthly_seasonality = "false",
                    weekly_seasonality = "auto",
                    daily_seasonality = "auto"),
             growth={
@@ -187,8 +188,14 @@ for index, product in enumerate(products):
         )
 
         forecast = result.forecast
+
+        # Pronóstico para 2025
+        forecast_df = result.forecast.df
+        forecast_2025 = forecast_df[forecast_df["ts"] >= "2025-01-01"].sum()
+        print(forecast_2025)
+
         fig = forecast.plot()
-        fig.write_html(f"html/silver{products_name[index]}-{product}.html")
+        fig.write_html(f"forum-2025/silver{products_name[index]}-{product}.html")
 
 
         # Crecimiento y Tendencia pero no se ha hecho nada con esto como tal.
@@ -212,7 +219,7 @@ for index, product in enumerate(products):
         #     plot=False)
         # fig.write_html(f"html/growth-{products_name[index]}-{product}.html")
 
-        print(f"html/{products_name[index]}-{product}.html")
+        print(f"forum-2025/{products_name[index]}-{product}.html")
         print(pd.DataFrame(result.backtest.test_evaluation, index=["Value"]).transpose())
         print("Tarde Esto en Correr!:", datetime.datetime.now() - runtime)
         # break

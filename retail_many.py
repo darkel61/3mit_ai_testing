@@ -125,12 +125,12 @@ for index, product in enumerate(products):
     )
 
     # Cross Validation. 
-    # evaluation_period = EvaluationPeriodParam(
-    #     test_horizon=90,
-    #     cv_horizon=125,
-    #     cv_max_splits=3,
-    #     cv_min_train_periods=200
-    # )
+    evaluation_period = EvaluationPeriodParam(
+        test_horizon=90,
+        cv_horizon=125,
+        cv_max_splits=3,
+        cv_min_train_periods=200
+    )
 
     # Runs the forecast
     try:

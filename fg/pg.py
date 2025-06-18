@@ -22,11 +22,12 @@ select
 	date(pol.create_date),
 	pol.qty,
 	pol.price_unit,
-    po.branch_id
+    rb.name as branch_name
 from pos_order_line pol 
 left join pos_order po on pol.order_id = po.id
 left join product_product pp on pol.product_id = pp.id 
 left join product_template pt on pp.product_tmpl_id = pt.id 
+left join res_branch rb on po.branch_id = rb.id
 where 
 po.state = 'invoiced' and
 pt.principio_activo in ('DICLOFENAC POTASICO', 'ACETAMINOFEN');
